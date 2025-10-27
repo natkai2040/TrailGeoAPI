@@ -39,6 +39,9 @@ def get_trail_by_name(name: str = Query(..., description="Exact trail name to se
     result = trails[trails["name"].str.lower() == name.lower()]
     if result.empty:
         return {"message": f"No trail found with name '{name}'."}
-    geojson_str = result.to_json()
-    geojson = json.loads(geojson_str)  # convert string → dict
-    return JSONResponse(content=geojson)
+    
+    # Drop all datetime columns
+    datetime_cols = [col for col in result.columns if result[col].dtype.kind in "Mm"]  # M = datetime64, m = timedelta
+    result = result.drop(columns=datetime_cols)
+
+    return result.to_json()
