@@ -2,6 +2,8 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 import geopandas as gpd
 from shapely.geometry import Point
+from fastapi.responses import JSONResponse
+import json
 
 app = FastAPI()
 
@@ -34,8 +36,9 @@ PROJECTION = trails.crs
 
 @app.get("/trails_by_name")
 def get_trail_by_name(name: str = Query(..., description="Exact trail name to search for")):
-    """Return matching trails by name."""
     result = trails[trails["name"].str.lower() == name.lower()]
     if result.empty:
         return {"message": f"No trail found with name '{name}'."}
-    return result.to_json()
+    geojson_str = result.to_json()
+    geojson = json.loads(geojson_str)  # convert string → dict
+    return JSONResponse(content=geojson)
