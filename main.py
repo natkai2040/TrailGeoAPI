@@ -34,7 +34,7 @@ trails = gpd.read_file("data/MA_State_Trails.geojson")
 print("Trail Data Loaded!")
 
 ## HELPER FUNCTION ##
-def get_trail_by_name(name):
+def get_trail_by_name_helper(name):
     return trails[trails["name"] == name]
 
 #Set global CRS
@@ -60,7 +60,7 @@ def get_species_by_trail(
     TRAIL_BUFFER = 200 #meters
 
     #Select trail
-    trail = get_trail_by_name(trail_name)
+    trail = get_trail_by_name_helper(trail_name)
 
     # trail.plot()
     #Add buffer:
