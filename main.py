@@ -109,3 +109,27 @@ def get_species_by_trail(
     # display(species)    
     return species.to_json()
 
+
+@app.get("/trails_search")
+def search_trails_by_name(
+    q: str = Query(..., description="Partial trail name to search for")
+):
+    """Return a list of trails whose names contain the search string."""
+    # Case-insensitive substring search
+    matches = trails[trails["name"].str.contains(q, case=False, na=False)]
+
+    if matches.empty:
+        return {"message": f"No trails found matching '{q}'."}
+
+    # Drop datetime columns (avoid serialization issues)
+    datetime_cols = [col for col in matches.columns if matches[col].dtype.kind in "Mm"]
+    matches = matches.drop(columns=datetime_cols)
+
+    # Simplify result — return only key info
+    simplified = matches[["name", "geometry"]].copy()
+    simplified["geometry"] = simplified["geometry"].astype(str)
+
+    # Convert to list of dicts
+    results_list = simplified.to_dict(orient="records")
+
+    return {"count": len(results_list), "results": results_list}
