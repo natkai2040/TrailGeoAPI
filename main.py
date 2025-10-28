@@ -5,6 +5,7 @@ import pandas as pd
 from shapely.geometry import Point
 from fastapi.responses import JSONResponse
 import json
+from pyproj import CRS
 import requests
 
 app = FastAPI()
@@ -33,9 +34,6 @@ app.add_middleware(
 trails = gpd.read_file("data/MA_State_Trails.geojson")
 print("Trail Data Loaded!")
 
-## HELPER FUNCTION ##
-def get_trail_by_name_helper(name):
-    return trails[trails["name"] == name]
 
 #Set global CRS
 PROJECTION = trails.crs
@@ -51,6 +49,10 @@ def get_trail_by_name(name: str = Query(..., description="Exact trail name to se
     result = result.drop(columns=datetime_cols)
 
     return result.to_json()
+
+## HELPER FUNCTION ##
+def get_trail_by_name_helper(name):
+    return trails[trails["name"] == name]
 
 @app.get("/species_by_trail")
 def get_species_by_trail(
@@ -94,7 +96,7 @@ def get_species_by_trail(
         "quality_grade": "research",
         "per_page": 200,
         "page": 1,
-        "month": [last_month, curr_month, last_month],        
+        "month": [last_month, curr_month, next_month],        
         "year": [2022, 2023, 2024],     # last 3 years
         "order_by": "observed_on"
     }

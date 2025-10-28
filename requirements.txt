@@ -5,4 +5,5 @@ shapely
 pyproj
 fiona
 pandas
+json
 requests
