@@ -33,6 +33,10 @@ app.add_middleware(
 trails = gpd.read_file("data/MA_State_Trails.geojson")
 print("Trail Data Loaded!")
 
+## HELPER FUNCTION ##
+def get_trail_by_name(name):
+    return trails[trails["name"] == name]
+
 #Set global CRS
 PROJECTION = trails.crs
 
