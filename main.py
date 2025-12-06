@@ -102,10 +102,11 @@ def get_species_by_trail(
     }
 
     r = requests.get(iNat_url, params=params)
-    
     data = r.json()
+    if data['total_results'] == 0: # No species found
+        return []
     observations = pd.json_normalize(data["results"])
-    species = observations["species_guess"]
+    species = observations[["species_guess", "taxon.default_photo.url", "taxon.wikipedia_url"]]
     # display(species)    
     return species.to_json()
 
