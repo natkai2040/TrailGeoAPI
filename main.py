@@ -106,7 +106,7 @@ def get_species_by_trail(
     if data['total_results'] == 0: # No species found
         return []
     observations = pd.json_normalize(data["results"])
-    species = observations[["species_guess", "taxon.default_photo.url", "taxon.wikipedia_url"]]
+    species = observations[["species_guess", "taxon.default_photo.medium_url", "taxon.wikipedia_url"]]
     # display(species)    
     return species.to_json()
 
