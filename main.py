@@ -188,14 +188,30 @@ def get_buffer(coordinate_list):
     dissolved = gdf.union_all() #Combines all the geometries into one file
     return gpd.GeoDataFrame(geometry=[dissolved], crs=5070).to_crs(PROJECTION)
 
+
+def normalize_id_list(items):
+    if not items:
+        return []
+
+    output = []
+    for item in items:
+        if "," in item:
+            output.extend(x.strip() for x in item.split(",") if x.strip())
+        else:
+            output.append(item.strip())
+
+    return output
+
 # example request: /extended_trail_search?current_month=5&include_ids=123,456&exclude_ids=789&trail_name=Blue%20Trail
 @app.get("/extended_trail_search")
 def get_trail_by_species(
     current_month: int = Query(..., ge=1, le=12, description="Current month as integer 1-12"),
-    include_ids: List[str] = Query(None, description="List of species IDs to include"),
-    exclude_ids: List[int] = Query(None, description="List of species IDs to exclude"),
+    include_ids: List[str] = Query(None, description="Comma seperated list of species IDs to include"),
+    exclude_ids: List[int] = Query(None, description="Comma seperated list of species IDs to exclude"),
     q: str = Query('', description="Partial trail name to search for or empty for all trails")
 ):
+    include_ids = normalize_id_list(include_ids)
+    exclude_ids = normalize_id_list(exclude_ids)
     #Filter trail by name
     if (q != ''):
         trail = search_trails_gdf(q)
