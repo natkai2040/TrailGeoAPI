@@ -224,4 +224,11 @@ def get_trail_by_species(
         out_mask = ~filtered_trail.intersects(buffers[1].geometry.iloc[0])
         filtered_trail = filtered_trail[out_mask].copy()
 
-    return {"count": len(filtered_trail), "results": filtered_trail}
+    safe = filtered_trail.copy()
+
+    safe["geometry"] = safe["geometry"].astype(str) # convert safely to strings.
+
+    return {
+        "count": len(safe),
+        "results": safe.to_dict(orient="records")
+    }
