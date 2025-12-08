@@ -195,10 +195,11 @@ def normalize_id_list(items):
 
     output = []
     for item in items:
-        if "," in item:
-            output.extend(x.strip() for x in item.split(",") if x.strip())
-        else:
-            output.append(item.strip())
+        if item:  # ignore empty strings
+            if "," in item:
+                output.extend(x.strip() for x in item.split(",") if x.strip())
+            else:
+                output.append(item.strip())
 
     return output
 
