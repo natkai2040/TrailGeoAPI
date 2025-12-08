@@ -113,32 +113,34 @@ def get_species_by_trail(
     # display(species)    
     return species.to_json()
 
-def search_trails_by_name_internal(q: str):
-    """Return a list of trails whose names contain the search string."""
-    # Case-insensitive substring search
+def search_trails_gdf(q: str): # returns GeoDataFrame
     matches = trails[trails["name"].str.contains(q, case=False, na=False)]
 
     if matches.empty:
-        return {"message": f"No trails found matching '{q}'."}
+        return gpd.GeoDataFrame(columns=trails.columns, crs=trails.crs)
 
-    # Drop datetime columns (avoid serialization issues)
     datetime_cols = [col for col in matches.columns if matches[col].dtype.kind in "Mm"]
     matches = matches.drop(columns=datetime_cols)
 
-    # Simplify result — return only key info
-    simplified = matches[["name", "geometry"]].copy()
-    simplified["geometry"] = simplified["geometry"].astype(str)
-
-    # Convert to list of dicts
-    results_list = simplified.to_dict(orient="records")
-
-    return {"count": len(results_list), "results": results_list}
+    return matches
 
 @app.get("/trails_search")
 def search_trails_by_name(
     q: str = Query(..., description="Partial trail name to search for")
 ):
-    return search_trails_by_name_internal(q)
+    gdf = search_trails_gdf(q)
+
+    if gdf.empty:
+        return {"message": f"No trails found matching '{q}'."}
+
+    # Convert trails to Dict
+    results = gdf[["name", "geometry"]].copy()
+    results["geometry"] = results["geometry"].astype(str)
+
+    return {
+        "count": len(results),
+        "results": results.to_dict(orient="records")
+    }
 
 def species_search(species_list, current_month, iNat_endpoint, place_ID = 2):
     '''Helper function to run iNaturalist API queries. Default search is within place_ID=2 (MA). Returns JSON'''
@@ -196,7 +198,7 @@ def get_trail_by_species(
 ):
     #Filter trail by name
     if (q != ''):
-        trails = search_trails_by_name_internal(q)["results"]
+        trail = search_trails_gdf(q)
     else:
         trail = trails
 
