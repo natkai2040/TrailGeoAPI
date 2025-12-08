@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 import geopandas as gpd
@@ -205,10 +205,10 @@ def normalize_id_list(items):
 # example request: /extended_trail_search?current_month=5&include_ids=123,456&exclude_ids=789&trail_name=Blue%20Trail
 @app.get("/extended_trail_search")
 def get_trail_by_species(
-    current_month: int = Query(..., ge=1, le=12, description="Current month as integer 1-12"),
-    include_ids: List[str] = Query(None, description="Comma seperated list of species IDs to include"),
-    exclude_ids: List[str] = Query(None, description="Comma seperated list of species IDs to exclude"),
-    q: str = Query('', description="Partial trail name to search for or empty for all trails")
+    current_month: Optional[int] = Query(..., ge=1, le=12, description="Current month as integer 1-12"),
+    include_ids: Optional[List[str]] = Query(None, description="Comma seperated list of species IDs to include"),
+    exclude_ids: Optional[List[str]] = Query(None, description="Comma seperated list of species IDs to exclude"),
+    q: Optional[str] = Query('', description="Partial trail name to search for or empty for all trails")
 ):
     include_ids = normalize_id_list(include_ids)
     exclude_ids = normalize_id_list(exclude_ids)
