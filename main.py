@@ -202,14 +202,15 @@ def get_trail_by_species(
     else:
         trail = trails
 
-    #Construct include and exclude buffers
     buffers = []
     for flagged_list in [include_ids, exclude_ids]:
-        if len(flagged_list) == 0:
-            buffers.append(-2) #Indicating that no buffer was generated because no species were specified
+        if not flagged_list:  #can put parameter as None or empty list
+            buffers.append(-2) # Placeholder for no buffer
             continue
+
         print("Generating Buffer")
-        json = species_search(flagged_list, current_month, "https://api.inaturalist.org/v1/grid/7/38/47.grid.json")
+        json = species_search(flagged_list, current_month,
+                            "https://api.inaturalist.org/v1/grid/7/38/47.grid.json")
         coords = iNatGrid_to_coords(json)
         buffer = get_buffer(coords)
         buffers.append(buffer)
