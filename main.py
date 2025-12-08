@@ -220,5 +220,3 @@ def get_trail_by_species(
         out_mask = ~filtered_trail.intersects(buffers[1].geometry.iloc[0])
         filtered_trail = filtered_trail[out_mask].copy()
     return filtered_trail
-
-get_trail_by_name_internal("Frost Pocket Path")
