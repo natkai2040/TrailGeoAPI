@@ -39,17 +39,19 @@ print("Trail Data Loaded!")
 #Set global CRS
 PROJECTION = trails.crs
 
-@app.get("/trails_by_name")
-def get_trail_by_name(name: str = Query(..., description="Exact trail name to search for")):
+def get_trail_by_name_internal(name: str):
     result = trails[trails["name"].str.lower() == name.lower()]
     if result.empty:
         return {"message": f"No trail found with name '{name}'."}
-    
     # Drop all datetime columns
     datetime_cols = [col for col in result.columns if result[col].dtype.kind in "Mm"]  # M = datetime64, m = timedelta
     result = result.drop(columns=datetime_cols)
 
     return result.to_json()
+
+@app.get("/trails_by_name")
+def get_trail_by_name(name: str = Query(..., description="Exact trail name to search for")):
+    return get_trail_by_name_internal(name)
 
 ## HELPER FUNCTION ##
 def get_trail_by_name_helper(name):
@@ -192,7 +194,7 @@ def get_trail_by_species(
 ):
     #Filter trail by name
     if (trail_name != ''):
-        trail = get_trail_by_name(trails, trail_name)
+        trail = get_trail_by_name_internal(trail_name)
     else:
         trail = trails
 
@@ -219,3 +221,4 @@ def get_trail_by_species(
         filtered_trail = filtered_trail[out_mask].copy()
     return filtered_trail
 
+get_trail_by_name_internal("Frost Pocket Path")
