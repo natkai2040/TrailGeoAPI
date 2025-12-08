@@ -113,11 +113,7 @@ def get_species_by_trail(
     # display(species)    
     return species.to_json()
 
-
-@app.get("/trails_search")
-def search_trails_by_name(
-    q: str = Query(..., description="Partial trail name to search for")
-):
+def search_trails_by_name_internal(q: str):
     """Return a list of trails whose names contain the search string."""
     # Case-insensitive substring search
     matches = trails[trails["name"].str.contains(q, case=False, na=False)]
@@ -137,6 +133,12 @@ def search_trails_by_name(
     results_list = simplified.to_dict(orient="records")
 
     return {"count": len(results_list), "results": results_list}
+
+@app.get("/trails_search")
+def search_trails_by_name(
+    q: str = Query(..., description="Partial trail name to search for")
+):
+    return search_trails_by_name_internal(q)
 
 def species_search(species_list, current_month, iNat_endpoint, place_ID = 2):
     '''Helper function to run iNaturalist API queries. Default search is within place_ID=2 (MA). Returns JSON'''
@@ -190,11 +192,11 @@ def get_trail_by_species(
     current_month: int = Query(..., ge=1, le=12, description="Current month as integer 1-12"),
     include_ids: List[str] = Query(None, description="List of species IDs to include"),
     exclude_ids: List[int] = Query(None, description="List of species IDs to exclude"),
-    trail_name: str = Query('', description="Exact trail name to search for")
+    q: str = Query('', description="Partial trail name to search for or empty for all trails")
 ):
     #Filter trail by name
-    if (trail_name != ''):
-        trail = get_trail_by_name_internal(trail_name)
+    if (q != ''):
+        trails = search_trails_by_name_internal(q)["results"]
     else:
         trail = trails
 
@@ -219,4 +221,5 @@ def get_trail_by_species(
     if type(buffers[1]) != int: #If no species in exclude list skip code below
         out_mask = ~filtered_trail.intersects(buffers[1].geometry.iloc[0])
         filtered_trail = filtered_trail[out_mask].copy()
-    return filtered_trail
+
+    return {"count": len(filtered_trail), "results": filtered_trail}
