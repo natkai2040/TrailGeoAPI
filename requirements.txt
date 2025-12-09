@@ -7,4 +7,3 @@ fiona
 pandas
 requests
 supabase
-os
