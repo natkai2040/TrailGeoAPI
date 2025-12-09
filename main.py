@@ -9,6 +9,8 @@ import json
 from pyproj import CRS
 import requests
 import os
+from supabase import create_client, Client
+
 
 app = FastAPI()
 
@@ -251,9 +253,10 @@ def get_trail_by_species(
         "results": safe.to_dict(orient="records")
     }
 
-from supabase import create_client, Client
+url: str = os.environ.get("SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_KEY")
 
-supabase = create_client(os.environ.get("NEXT_PUBLIC_SUPABASE_URL"), os.environ.get("NEXT_SUPABASE_SERVICE_KEY"))
+supabase: Client = create_client(url, key)
 
 PROJECTION = "EPSG:4326"  
 
