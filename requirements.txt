@@ -6,3 +6,5 @@ pyproj
 fiona
 pandas
 requests
+supabase-py
+os

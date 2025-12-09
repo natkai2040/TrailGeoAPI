@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 import json
 from pyproj import CRS
 import requests
+import os
 
 app = FastAPI()
 
@@ -188,7 +189,6 @@ def get_buffer(coordinate_list):
     dissolved = gdf.union_all() #Combines all the geometries into one file
     return gpd.GeoDataFrame(geometry=[dissolved], crs=5070).to_crs(PROJECTION)
 
-
 def normalize_id_list(items):
     if not items:
         return []
@@ -250,3 +250,79 @@ def get_trail_by_species(
         "count": len(safe),
         "results": safe.to_dict(orient="records")
     }
+
+from supabase import create_client, Client
+
+supabase = create_client(os.environ.get("NEXT_PUBLIC_SUPABASE_URL"), os.environ.get("NEXT_SUPABASE_SERVICE_KEY"))
+
+PROJECTION = "EPSG:4326"  
+
+def get_trail_by_id(trail_id: str) -> gpd.GeoDataFrame:
+    """Fetch trail geometry from Supabase by ID."""
+    res = supabase.table("custom_trails").select("*").eq("id", trail_id).execute()
+    if not res.data:
+        return gpd.GeoDataFrame(columns=["geometry"], crs=PROJECTION)
+
+    features = res.data[0]["features"]
+    # handle either FeatureCollection or single Feature
+    if isinstance(features, dict) and features.get("type") == "FeatureCollection":
+        gdf = gpd.GeoDataFrame.from_features(features["features"], crs=PROJECTION)
+    else:
+        gdf = gpd.GeoDataFrame.from_features([features], crs=PROJECTION)
+
+    return gdf
+
+@app.get("/species_by_trail_by_id") # duplicate of species_by_trail but uses trail ID from supabase
+def get_species_by_trail_by_id(
+    trail_id: str = Query(..., description="ID of the trail in supabase"),
+    current_month: int = Query(..., ge=1, le=12, description="Current month as integer 1-12")
+):
+    TRAIL_BUFFER = 200  # meters
+
+    # Fetch trail geometry from Supabase
+    trail = get_trail_by_id(trail_id)
+    if trail.empty:
+        return []
+
+    # Buffer the trail
+    trail = trail.to_crs(epsg=5070)  # to metered projection
+    trail = gpd.GeoDataFrame(geometry=trail.buffer(TRAIL_BUFFER), crs=trail.crs)
+    trail = trail.dissolve()
+    trail = trail.to_crs(crs=PROJECTION)
+
+    # Bounding box
+    SW_Lng, SW_Lat, NE_Lng, NE_Lat = trail.total_bounds
+
+    # Adjacent months
+    curr_month = current_month
+    last_month = 12 if curr_month == 1 else curr_month - 1
+    next_month = 1 if curr_month == 12 else curr_month + 1
+
+    # iNaturalist API
+    iNat_url = "https://api.inaturalist.org/v1/observations"
+    params = {
+        "swlng": SW_Lng,
+        "swlat": SW_Lat,
+        "nelng": NE_Lng,
+        "nelat": NE_Lat,
+        "quality_grade": "research",
+        "per_page": 200,
+        "page": 1,
+        "month": [last_month, curr_month, next_month],
+        "year": [2022, 2023, 2024],
+        "order_by": "observed_on"
+    }
+
+    r = requests.get(iNat_url, params=params)
+    data = r.json()
+    if data.get("total_results", 0) == 0:
+        return []
+
+    observations = pd.json_normalize(data["results"])
+    species = observations[[
+        "species_guess",
+        "taxon.default_photo.medium_url",
+        "taxon.preferred_common_name"
+    ]]
+
+    return species.to_json()
