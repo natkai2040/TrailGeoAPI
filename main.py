@@ -266,12 +266,12 @@ def get_trail_by_id(trail_id: str) -> gpd.GeoDataFrame:
     if not res.data:
         return gpd.GeoDataFrame(columns=["geometry"], crs=PROJECTION)
 
-    features = res.data[0]["features"]
+    featureCollection = res.data[0]["featureCollection"]
     # handle either FeatureCollection or single Feature
-    if isinstance(features, dict) and features.get("type") == "FeatureCollection":
-        gdf = gpd.GeoDataFrame.from_features(features["features"], crs=PROJECTION)
+    if isinstance(featureCollection, dict) and featureCollection.get("type") == "FeatureCollection":
+        gdf = gpd.GeoDataFrame.from_features(featureCollection["features"], crs=PROJECTION)
     else:
-        gdf = gpd.GeoDataFrame.from_features([features], crs=PROJECTION)
+        gdf = gpd.GeoDataFrame.from_features([featureCollection], crs=PROJECTION)
 
     return gdf
 
